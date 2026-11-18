@@ -1,0 +1,68 @@
+using System;
+using Npgsql;
+
+namespace NZFTC_EMSYSTEM //Employee Management System
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string password = Environment.GetEnvironmentVariable("databasePassword"); //Database password stored in environment
+
+            string connString =
+                $"Host=ep-summer-haze-a7ejjsvy.ap-southeast-2.aws.neon.tech;" +
+                $"Port=5432;" +
+                $"Database=neondb;" +
+                $"Username=neondb_owner;" +
+                $"Password={password};" +
+                $"SSL Mode=Require;" +
+                $"Trust Server Certificate=true;";
+            try
+            {
+                using (var conn = new NpgsqlConnection(connString))//connecting to PostgreSQL
+                {
+                    conn.Open();
+
+                    //Employee data retrievaL
+                    string sql = "SELECT u.Username, e.Salary, e.LeaveBalance " +
+                                 "FROM Users u " +
+                                 "JOIN Employees e ON u.UserID = e.UserID " +
+                                 "WHERE u.Username = @username;";
+
+                    using (var cmd = new NpgsqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("username", "maco");
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                        {
+                            string employeeName = reader.GetString(0);
+                            decimal employeeSalary = reader.GetDecimal(1);
+                            int employeeLeave = reader.GetInt32(2);
+
+                            Console.WriteLine("\n--- Employee Data Retrieved ---");
+                            Console.WriteLine($"username: {employeeName}");
+                            Console.WriteLine($"salary: {employeeSalary}");
+                            Console.WriteLine($"leave balance: {employeeLeave}days");                        }
+                        else
+                        {
+                            Console.WriteLine("employee data not found");
+                        }
+                    }
+                }
+             }
+            }
+
+            catch (NpgsqlException ex)
+            {
+                Console.WriteLine($"Database error occurred: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+            }
+            Console.WriteLine("\nPress any key to close the application.");
+            Console.ReadKey();
+        }
+    }
+}
