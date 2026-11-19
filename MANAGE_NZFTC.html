@@ -1,39 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Management System NZFTC</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 36px;
-        }
-
-        p {
-            font-size: 20px;
-            color: #777777;
-            letter-spacing: 3px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NZFTC | Employee Management</title>
+  <style>
+    /* Shared colours, typography and spacing. */
+    :root { --primary:#6b3fa0; --primary-dark:#512b80; --background:#dce3eb; --panel:#fff; --text:#1f2937; --muted:#596273; --border:#d2d6df; --error:#b91c1c; --success:#166534; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:24px; }
+    body { margin:0; font-family:"Segoe UI",Arial,sans-serif; color:var(--text); background:var(--background); line-height:1.6; }
+    a { color:var(--primary); text-underline-offset:4px; }
+    button,input { font:inherit; }
+    button,a,input { -webkit-tap-highlight-color:transparent; }
+    :focus-visible { outline:3px solid var(--primary); outline-offset:4px; }
+    .skip-link { position:absolute; top:-100px; left:12px; padding:10px; background:white; z-index:5; }
+    .skip-link:focus { top:10px; }
+    header { background:var(--panel); border-bottom:1px solid var(--border); }
+    .header-inner { max-width:1120px; margin:auto; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; gap:22px; flex-wrap:wrap; }
+    .brand { text-decoration:none; color:var(--text); display:flex; align-items:center; gap:12px; }
+    .brand-mark { background:var(--primary); color:white; width:42px; height:42px; display:grid; place-items:center; border-radius:10px; font-size:24px; font-weight:600; }
+    .brand strong { display:block; font-size:20px; line-height:1.2; }
+    .brand small { color:var(--muted); font-size:12px; }
+    nav { display:flex; gap:24px; flex-wrap:wrap; align-items:center; }
+    nav a { color:var(--text); text-decoration:none; font-size:14px; font-weight:600; padding:8px 0; }
+    nav a:hover { color:var(--primary); text-decoration:underline; }
+    main { max-width:1120px; margin:auto; padding:44px 28px 28px; }
+    .eyebrow { color:var(--primary); font-size:12px; letter-spacing:1.7px; font-weight:700; text-transform:uppercase; margin:0 0 14px; }
+    .hero { display:grid; grid-template-columns:1.15fr 1fr; gap:58px; align-items:center; }
+    h1 { font-size:clamp(30px,4vw,48px); line-height:1.15; letter-spacing:-1.4px; margin:0 0 20px; font-weight:600; }
+    .intro { color:var(--muted); font-size:17px; max-width:500px; }
+    .login-panel { padding:32px; background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 28px #1f29370a; }
+    h2 { font-size:20px; font-weight:600; margin:0 0 10px; }
+    .login-panel>p { font-size:14px; color:var(--muted); margin:0 0 24px; }
+    .field { margin-bottom:18px; }
+    label { display:block; font-size:14px; font-weight:600; margin-bottom:7px; }
+    input[type="text"],input[type="password"] { width:100%; min-height:44px; border:1px solid #8791a2; border-radius:4px; padding:9px 12px; background:white; color:var(--text); }
+    input[aria-invalid="true"] { border-color:var(--error); }
+    .checkbox { display:flex; align-items:center; gap:8px; font-weight:400; margin:0 0 20px; cursor:pointer; }
+    .checkbox input { width:17px; height:17px; accent-color:var(--primary); }
+    .primary { width:100%; min-height:44px; background:var(--primary); color:white; border:0; border-radius:4px; font-weight:600; cursor:pointer; }
+    .primary:hover { background:var(--primary-dark); }
+    .message { margin:14px 0 0; font-size:14px; overflow-wrap:anywhere; }
+    .login-panel .availability { margin:20px 0 0; padding-top:16px; border-top:1px solid var(--border); font-size:13px; color:var(--muted); }
+    .message:empty { display:none; }
+    .message.error { color:var(--error); }
+    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:36px; margin-top:52px; border-top:1px solid var(--border); padding-top:30px; }
+    .info-grid h2 { font-size:18px; }
+    .info-grid p { color:var(--muted); font-size:14px; margin:0; }
+    footer { max-width:1120px; margin:0 auto; padding:26px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
+    @media(max-width:760px) { .hero,.info-grid { grid-template-columns:1fr; gap:28px; } main { padding:30px 20px 16px; } .header-inner { padding:18px 20px; } nav { gap:20px; } .login-panel { padding:24px; } .info-grid { margin-top:32px; } footer { padding:24px 20px; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
 </head>
-
 <body>
-    <div>
-        <h1>Management System NZFTC</h1>
-        <p>IN DEVELOPMENT</p>
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+  <header>
+    <div class="header-inner">
+      <a class="brand" href="#home" aria-label="NZFTC home"><span class="brand-mark" aria-hidden="true">N</span><span><strong>NZFTC</strong><small>Employee Management</small></span></a>
+      <nav aria-label="Main navigation"><a href="#home">Home</a><a href="#login">Login</a><a href="#about">About</a><a href="#contact">Contact</a></nav>
     </div>
+  </header>
+  <main id="mainContent">
+    <div class="hero" id="home">
+      <section aria-labelledby="welcomeHeading">
+        <p class="eyebrow">New Zealand Finance and Trade Company</p>
+        <h1 id="welcomeHeading">Welcome to your<br>employee portal.</h1>
+        <p class="intro">New Zealand Finance and Trade Company<br>Employee and administrator access.</p>
+      </section>
+      <!-- Login layout only. Backend authentication will be connected later. -->
+      <section class="login-panel" id="login" aria-labelledby="loginHeading">
+        <h2 id="loginHeading">Welcome back</h2>
+        <p>Enter your details to sign in.</p>
+        <form id="loginForm" novalidate aria-describedby="loginAvailability">
+          <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required aria-describedby="loginMessage"></div>
+          <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="loginMessage"></div>
+          <label class="checkbox"><input id="showPassword" type="checkbox">Show password</label>
+          <button class="primary" id="loginButton" type="submit" disabled>Login</button>
+          <p class="message" id="loginMessage" role="status" aria-live="polite" aria-atomic="true"></p>
+        </form>
+        <p class="availability" id="loginAvailability">Sign-in is not available yet.</p>
+        <noscript><p>Please enable JavaScript to use this form. Sign-in is not available yet.</p></noscript>
+      </section>
+    </div>
+    <div class="info-grid">
+      <section id="about" aria-labelledby="aboutHeading"><p class="eyebrow">About NZFTC</p><h2 id="aboutHeading">Employee support</h2><p>For questions about your employee details, leave or payroll, contact your People and Culture team.</p></section>
+      <section id="contact" aria-labelledby="contactHeading"><p class="eyebrow">Contact &amp; support</p><h2 id="contactHeading">Need help?</h2><p>For account or access enquiries, contact your People and Culture team through your usual internal channel.</p></section>
+    </div>
+  </main>
+  <footer><span>NZFTC Employee Management</span><span>New Zealand Finance and Trade Company</span></footer>
+  <script>
+    // Frontend validation only: no authentication, network requests or password storage.
+    const loginForm = document.getElementById('loginForm');
+    document.getElementById('loginButton').disabled = false;
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginMessage = document.getElementById('loginMessage');
+    loginForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const missingUsername = usernameInput.value.trim() === '';
+      const missingPassword = passwordInput.value.trim() === '';
+      usernameInput.setAttribute('aria-invalid', String(missingUsername));
+      passwordInput.setAttribute('aria-invalid', String(missingPassword));
+      if (missingUsername || missingPassword) {
+        loginMessage.className = 'message error';
+        loginMessage.textContent = missingUsername && missingPassword ? 'Please enter your username and password.' : missingUsername ? 'Please enter your username.' : 'Please enter your password.';
+        (missingUsername ? usernameInput : passwordInput).focus();
+        return;
+      }
+      loginMessage.className = 'message';
+      loginMessage.textContent = 'Sign-in is not available yet. Please contact your People and Culture team if you need assistance.';
+    });
+    // Clear old feedback when users correct the form.
+    [usernameInput, passwordInput].forEach(function (input) {
+      input.addEventListener('input', function () {
+        input.removeAttribute('aria-invalid');
+        loginMessage.textContent = '';
+      });
+    });
+    document.getElementById('showPassword').addEventListener('change', function (event) {
+      passwordInput.type = event.target.checked ? 'text' : 'password';
+    });
+    // The Login button stays disabled if JavaScript is unavailable.
+  </script>
 </body>
 </html>
