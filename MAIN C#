@@ -1,68 +1,254 @@
+
 using System;
 using Npgsql;
 
-namespace NZFTC_EMSYSTEM //Employee Management System
+class Program
 {
-    class Program
+    static void Main()
     {
-        static void Main(string[] args)
+        string databasePassword =
+            Environment.GetEnvironmentVariable("databasePassword");
+
+        string connString =
+            $"Host=ep-summer-haze-a7ejjsvy.ap-southeast-2.aws.neon.tech;" +
+            $"Port=5432;" +
+            $"Database=neondb;" +
+            $"Username=neondb_owner;" +
+            $"Password={databasePassword};" +
+            $"SSL Mode=Require;";
+
+        if (string.IsNullOrEmpty(databasePassword))
         {
-            string password = Environment.GetEnvironmentVariable("databasePassword"); //Database password stored in environment
+            Console.WriteLine("Database password not found.");
+            return;
+        }
 
-            string connString =
-                $"Host=ep-summer-haze-a7ejjsvy.ap-southeast-2.aws.neon.tech;" +
-                $"Port=5432;" +
-                $"Database=neondb;" +
-                $"Username=neondb_owner;" +
-                $"Password={password};" +
-                $"SSL Mode=Require;" +
-                $"Trust Server Certificate=true;";
-            try
+        try
+        {
+            using (var conn = new NpgsqlConnection(connString))
             {
-                using (var conn = new NpgsqlConnection(connString))//connecting to PostgreSQL
-                {
-                    conn.Open();
+                conn.Open();
 
-                    //Employee data retrievaL
-                    string sql = "SELECT u.Username, e.Salary, e.LeaveBalance " +
-                                 "FROM Users u " +
-                                 "JOIN Employees e ON u.UserID = e.UserID " +
-                                 "WHERE u.Username = @username;";
+                bool loggedIn = false;
+
+                while (!loggedIn)
+                {
+                    Console.WriteLine("\n===== NZFTC LOGIN =====");
+
+                    Console.Write("Username: ");
+                    string username = Console.ReadLine();
+
+                    Console.Write("Password: ");
+                    string userPassword = Console.ReadLine();
+
+                    string sql = @"
+                        SELECT userid, username, password, role
+                        FROM users
+                        WHERE username = @username;";
 
                     using (var cmd = new NpgsqlCommand(sql, conn))
                     {
-                        cmd.Parameters.AddWithValue("username", "maco");
+                        cmd.Parameters.AddWithValue("username", username);
+
                         using (var reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
-                        {
-                            string employeeName = reader.GetString(0);
-                            decimal employeeSalary = reader.GetDecimal(1);
-                            int employeeLeave = reader.GetInt32(2);
+                            {
+                                int userID = reader.GetInt32(0);
+                                string dbUsername = reader.GetString(1);
+                                string dbPassword = reader.GetString(2);
+                                string role = reader.GetString(3);
 
-                            Console.WriteLine("\n--- Employee Data Retrieved ---");
-                            Console.WriteLine($"username: {employeeName}");
-                            Console.WriteLine($"salary: {employeeSalary}");
-                            Console.WriteLine($"leave balance: {employeeLeave}days");                        }
-                        else
-                        {
-                            Console.WriteLine("employee data not found");
+                                if (userPassword == dbPassword)
+                                {
+                                    reader.Close();
+
+                                    if (role.Equals("Admin",
+                                        StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        loggedIn = true;
+                                        AdminMenu(conn);
+                                    }
+                                    else if (role.Equals("Employee",
+                                        StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        loggedIn = true;
+                                        EmployeeMenu(conn, userID);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Invalid user role.");
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine(
+                                        "Incorrect username or password.");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine(
+                                    "Incorrect username or password.");
+                            }
                         }
                     }
                 }
-             }
             }
+        }
+        catch (NpgsqlException ex)
+        {
+            Console.WriteLine("Database error: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
 
-            catch (NpgsqlException ex)
+        Console.WriteLine("\nPress any key to exit...");
+        Console.ReadKey();
+    }
+
+    // ADMIN MENU
+    static void AdminMenu(NpgsqlConnection conn)
+    {
+        bool running = true;
+
+        while (running)
+        {
+            Console.WriteLine("\n===== ADMIN MENU =====");
+            Console.WriteLine("1. Employee Management");
+            Console.WriteLine("2. Leave Management");
+            Console.WriteLine("3. Payroll Management");
+            Console.WriteLine("4. Company Information");
+            Console.WriteLine("5. Holiday Management");
+            Console.WriteLine("6. Logout");
+
+            Console.Write("Select an option: ");
+            string choice = Console.ReadLine();
+
+            switch (choice)
             {
-                Console.WriteLine($"Database error occurred: {ex.Message}");
+                case "1":
+                    Console.WriteLine("Employee Management selected.");
+                    break;
+
+                case "2":
+                    Console.WriteLine("Leave Management selected.");
+                    break;
+
+                case "3":
+                    Console.WriteLine("Payroll Management selected.");
+                    break;
+
+                case "4":
+                    Console.WriteLine("Company Information selected.");
+                    break;
+
+                case "5":
+                    Console.WriteLine("Holiday Management selected.");
+                    break;
+
+                case "6":
+                    running = false;
+                    Console.WriteLine("Logging out...");
+                    break;
+
+                default:
+                    Console.WriteLine("Invalid option. Try again.");
+                    break;
             }
-            catch (Exception ex)
+        }
+    }
+
+    // EMPLOYEE MENU
+    static void EmployeeMenu(NpgsqlConnection conn, int userID)
+    {
+        bool running = true;
+
+        while (running)
+        {
+            Console.WriteLine("\n===== EMPLOYEE MENU =====");
+            Console.WriteLine("1. View My Information");
+            Console.WriteLine("2. Update My Information");
+            Console.WriteLine("3. Apply for Leave");
+            Console.WriteLine("4. View Leave Balance");
+            Console.WriteLine("5. View My Payslips");
+            Console.WriteLine("6. View Holiday Lists");
+            Console.WriteLine("7. Logout");
+
+            Console.Write("Select an option: ");
+            string choice = Console.ReadLine();
+
+            switch (choice)
             {
-                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+                case "1":
+                    ViewMyInformation(conn, userID);
+                    break;
+
+                case "2":
+                    Console.WriteLine("Update My Information selected.");
+                    break;
+
+                case "3":
+                    Console.WriteLine("Apply for Leave selected.");
+                    break;
+
+                case "4":
+                    Console.WriteLine("View Leave Balance selected.");
+                    break;
+
+                case "5":
+                    Console.WriteLine("View My Payslips selected.");
+                    break;
+
+                case "6":
+                    Console.WriteLine("View Holiday Lists selected.");
+                    break;
+
+                case "7":
+                    running = false;
+                    Console.WriteLine("Logging out...");
+                    break;
+
+                default:
+                    Console.WriteLine("Invalid option. Try again.");
+                    break;
             }
-            Console.WriteLine("\nPress any key to close the application.");
-            Console.ReadKey();
+        }
+    }
+
+    // VIEW EMPLOYEE INFORMATION
+    static void ViewMyInformation(NpgsqlConnection conn, int userID)
+    {
+        string sql = @"
+            SELECT u.Username, e.Salary, e.LeaveBalance
+            FROM Users u
+            JOIN Employees e ON u.UserID = e.UserID
+            WHERE u.UserID = @userID;";
+
+        using (var cmd = new NpgsqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("userID", userID);
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    string username = reader.GetString(0);
+                    decimal salary = reader.GetDecimal(1);
+                    decimal leaveBalance = reader.GetDecimal(2);
+
+                    Console.WriteLine("\n===== MY INFORMATION =====");
+                    Console.WriteLine("Username: " + username);
+                    Console.WriteLine("Salary: $" + salary);
+                    Console.WriteLine("Leave Balance: " + leaveBalance);
+                }
+                else
+                {
+                    Console.WriteLine("Employee information not found.");
+                }
+            }
         }
     }
 }
