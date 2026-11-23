@@ -1,11 +1,8 @@
-name: Deploy Frontend to GitHub Pages
+name: Deploy NZFTC Website
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'Frontend/**'
-      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -13,16 +10,8 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
 
     steps:
@@ -32,11 +21,10 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Frontend
+      - name: Upload Website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: './WEBPAGE'
+          path: './NZFTC_EMSYSTEM/WEBPAGE'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Deploy Website
         uses: actions/deploy-pages@v4
