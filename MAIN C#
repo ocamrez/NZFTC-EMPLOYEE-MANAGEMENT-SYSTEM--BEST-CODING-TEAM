@@ -1,4 +1,3 @@
-
 using System;
 using Npgsql;
 
@@ -10,12 +9,13 @@ class Program
             Environment.GetEnvironmentVariable("databasePassword");
 
         string connString =
-            $"Host=ep-summer-haze-a7ejjsvy.ap-southeast-2.aws.neon.tech;" +
+            $"Host=ep-young-surf-bk3w9gws-pooler.c-2.ap-southeast-2.aws.neon.tech;" +
             $"Port=5432;" +
             $"Database=neondb;" +
             $"Username=neondb_owner;" +
             $"Password={databasePassword};" +
-            $"SSL Mode=Require;";
+            $"SSL Mode=Require;" +
+            $"Channel Binding=Require;";
 
         if (string.IsNullOrEmpty(databasePassword))
         {
