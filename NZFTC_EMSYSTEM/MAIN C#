@@ -1,3 +1,4 @@
+
 using System;
 using Npgsql;
 
@@ -130,23 +131,23 @@ class Program
             switch (choice)
             {
                 case "1":
-                    Console.WriteLine("Employee Management selected.");
+                    EmployeeManagement(conn);
                     break;
 
                 case "2":
-                    Console.WriteLine("Leave Management selected.");
+                    LeaveManagement(conn);
                     break;
 
                 case "3":
-                    Console.WriteLine("Payroll Management selected.");
+                    PayrollManagement(conn);
                     break;
 
                 case "4":
-                    Console.WriteLine("Company Information selected.");
+                    CompanyInformation(conn);
                     break;
 
                 case "5":
-                    Console.WriteLine("Holiday Management selected.");
+                    HolidayManagement(conn);
                     break;
 
                 case "6":
@@ -187,23 +188,23 @@ class Program
                     break;
 
                 case "2":
-                    Console.WriteLine("Update My Information selected.");
+                    UpdateMyInformation(conn, userID);
                     break;
 
                 case "3":
-                    Console.WriteLine("Apply for Leave selected.");
+                    ApplyForLeave(conn, userID);
                     break;
 
                 case "4":
-                    Console.WriteLine("View Leave Balance selected.");
+                    ViewLeaveBalance(conn, userID);
                     break;
 
                 case "5":
-                    Console.WriteLine("View My Payslips selected.");
+                    ViewMyPayslips(conn, userID);
                     break;
 
                 case "6":
-                    Console.WriteLine("View Holiday Lists selected.");
+                    ViewHolidayLists(conn);
                     break;
 
                 case "7":
@@ -248,6 +249,677 @@ class Program
                 {
                     Console.WriteLine("Employee information not found.");
                 }
+            }
+        }
+    }
+
+    // EMPLOYEE MANAGEMENT
+    static void EmployeeManagement(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== EMPLOYEE MANAGEMENT =====");
+        Console.WriteLine("1. View Employees");
+        Console.WriteLine("2. Update Employee Salary and Tax Rate");
+        Console.WriteLine("3. Add Employment History");
+        Console.WriteLine("4. Add Performance Evaluation");
+        Console.WriteLine("5. Add Training Record");
+
+        Console.Write("Select an option: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            string sql = @"
+                SELECT u.UserID, u.Username, e.FullName,
+                       e.Salary, e.TaxRate, e.LeaveBalance
+                FROM Users u
+                JOIN Employees e ON u.UserID = e.UserID
+                WHERE u.Role = 'Employee';";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    Console.WriteLine("\nUser ID: " + reader.GetInt32(0));
+                    Console.WriteLine("Username: " + reader.GetString(1));
+                    Console.WriteLine("Name: " + reader.GetString(2));
+                    Console.WriteLine("Salary: $" + reader.GetDecimal(3));
+                    Console.WriteLine("Tax Rate: " + reader.GetDecimal(4) + "%");
+                    Console.WriteLine("Leave Balance: " + reader.GetDecimal(5));
+                }
+            }
+        }
+        else if (choice == "2")
+        {
+            Console.Write("Enter employee User ID: ");
+            int id = int.Parse(Console.ReadLine());
+
+            Console.Write("Enter new salary: ");
+            decimal salary = decimal.Parse(Console.ReadLine());
+
+            Console.Write("Enter tax rate (%): ");
+            decimal taxRate = decimal.Parse(Console.ReadLine());
+
+            string sql = @"
+                UPDATE Employees
+                SET Salary = @salary, TaxRate = @taxRate
+                WHERE UserID = @id;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("salary", salary);
+                cmd.Parameters.AddWithValue("taxRate", taxRate);
+                cmd.Parameters.AddWithValue("id", id);
+
+                Console.WriteLine(cmd.ExecuteNonQuery() > 0
+                    ? "Employee information updated."
+                    : "Employee not found.");
+            }
+        }
+        else if (choice == "3")
+        {
+            Console.Write("Enter employee User ID: ");
+            int id = int.Parse(Console.ReadLine());
+
+            Console.Write("Enter employment history: ");
+            string details = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO EmployeeHistory (UserID, HistoryDetails)
+                VALUES (@id, @details);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("id", id);
+                cmd.Parameters.AddWithValue("details", details);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Employment history added.");
+        }
+        else if (choice == "4")
+        {
+            Console.Write("Enter employee User ID: ");
+            int id = int.Parse(Console.ReadLine());
+
+            Console.Write("Enter performance evaluation: ");
+            string details = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO PerformanceEvaluations
+                (UserID, EvaluationDetails, EvaluationDate)
+                VALUES (@id, @details, CURRENT_DATE);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("id", id);
+                cmd.Parameters.AddWithValue("details", details);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Performance evaluation added.");
+        }
+        else if (choice == "5")
+        {
+            Console.Write("Enter employee User ID: ");
+            int id = int.Parse(Console.ReadLine());
+
+            Console.Write("Enter training details: ");
+            string details = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO TrainingRecords
+                (UserID, TrainingDetails, TrainingDate)
+                VALUES (@id, @details, CURRENT_DATE);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("id", id);
+                cmd.Parameters.AddWithValue("details", details);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Training record added.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid option.");
+        }
+    }
+
+    // LEAVE MANAGEMENT - ADMIN
+    static void LeaveManagement(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== LEAVE MANAGEMENT =====");
+        Console.WriteLine("1. View Leave Requests");
+        Console.WriteLine("2. Approve Leave Request");
+        Console.WriteLine("3. Reject Leave Request");
+        Console.WriteLine("4. Set Leave Policy");
+
+        Console.Write("Select an option: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            string sql = @"
+                SELECT RequestID, UserID, StartDate,
+                       EndDate, Reason, Status
+                FROM LeaveRequests
+                ORDER BY RequestID;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    Console.WriteLine("\nRequest ID: " + reader.GetInt32(0));
+                    Console.WriteLine("Employee ID: " + reader.GetInt32(1));
+                    Console.WriteLine("Start Date: " + reader.GetDateTime(2).ToShortDateString());
+                    Console.WriteLine("End Date: " + reader.GetDateTime(3).ToShortDateString());
+                    Console.WriteLine("Reason: " + reader.GetString(4));
+                    Console.WriteLine("Status: " + reader.GetString(5));
+                }
+            }
+        }
+        else if (choice == "2" || choice == "3")
+        {
+            Console.Write("Enter leave Request ID: ");
+            int requestID = int.Parse(Console.ReadLine());
+
+            string status = choice == "2" ? "Approved" : "Rejected";
+
+            string sql = @"
+                UPDATE LeaveRequests
+                SET Status = @status
+                WHERE RequestID = @id AND Status = 'Pending';";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("status", status);
+                cmd.Parameters.AddWithValue("id", requestID);
+
+                Console.WriteLine(cmd.ExecuteNonQuery() > 0
+                    ? "Leave request " + status + "."
+                    : "Pending leave request not found.");
+            }
+        }
+        else if (choice == "4")
+        {
+            Console.Write("Enter policy name: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Enter allowed leave days: ");
+            int days = int.Parse(Console.ReadLine());
+
+            Console.Write("Enter policy description: ");
+            string description = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO LeavePolicies
+                (PolicyName, DaysAllowed, Description)
+                VALUES (@name, @days, @description);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("name", name);
+                cmd.Parameters.AddWithValue("days", days);
+                cmd.Parameters.AddWithValue("description", description);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Leave policy added.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid option.");
+        }
+    }
+
+    // EMPLOYEE APPLY FOR LEAVE
+    static void ApplyForLeave(NpgsqlConnection conn, int userID)
+    {
+        Console.WriteLine("\n===== APPLY FOR LEAVE =====");
+
+        Console.Write("Enter start date (YYYY-MM-DD): ");
+        DateTime startDate = DateTime.Parse(Console.ReadLine());
+
+        Console.Write("Enter end date (YYYY-MM-DD): ");
+        DateTime endDate = DateTime.Parse(Console.ReadLine());
+
+        Console.Write("Enter reason for leave: ");
+        string reason = Console.ReadLine();
+
+        if (endDate < startDate)
+        {
+            Console.WriteLine("End date cannot be before start date.");
+            return;
+        }
+
+        string sql = @"
+            INSERT INTO LeaveRequests
+            (UserID, StartDate, EndDate, Reason, Status)
+            VALUES (@userID, @startDate, @endDate, @reason, 'Pending');";
+
+        using (var cmd = new NpgsqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("userID", userID);
+            cmd.Parameters.AddWithValue("startDate", startDate);
+            cmd.Parameters.AddWithValue("endDate", endDate);
+            cmd.Parameters.AddWithValue("reason", reason);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        Console.WriteLine("Leave request submitted.");
+    }
+
+    // VIEW LEAVE BALANCE
+    static void ViewLeaveBalance(NpgsqlConnection conn, int userID)
+    {
+        string sql = @"
+            SELECT LeaveBalance
+            FROM Employees
+            WHERE UserID = @userID;";
+
+        using (var cmd = new NpgsqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("userID", userID);
+
+            object result = cmd.ExecuteScalar();
+
+            if (result != null && result != DBNull.Value)
+                Console.WriteLine("Your leave balance: " + result + " days");
+            else
+                Console.WriteLine("Leave balance not found.");
+        }
+    }
+
+    // PAYROLL MANAGEMENT - ADMIN
+    static void PayrollManagement(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== PAYROLL MANAGEMENT =====");
+        Console.WriteLine("1. Generate Employee Payslip");
+        Console.WriteLine("2. View Payroll Reports");
+        Console.WriteLine("3. Configure Default Tax Rate");
+
+        Console.Write("Select an option: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            Console.Write("Enter employee User ID: ");
+            int id = int.Parse(Console.ReadLine());
+
+            string sql = @"
+                SELECT Salary, TaxRate
+                FROM Employees
+                WHERE UserID = @id;";
+
+            decimal salary;
+            decimal taxRate;
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("id", id);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        Console.WriteLine("Employee not found.");
+                        return;
+                    }
+
+                    salary = reader.GetDecimal(0);
+                    taxRate = reader.GetDecimal(1);
+                }
+            }
+
+            decimal tax = salary * taxRate / 100;
+            decimal netSalary = salary - tax;
+
+            string insert = @"
+                INSERT INTO Payslips
+                (UserID, PayDate, GrossSalary, TaxDeducted, NetSalary)
+                VALUES (@id, CURRENT_DATE, @salary, @tax, @net);";
+
+            using (var cmd = new NpgsqlCommand(insert, conn))
+            {
+                cmd.Parameters.AddWithValue("id", id);
+                cmd.Parameters.AddWithValue("salary", salary);
+                cmd.Parameters.AddWithValue("tax", tax);
+                cmd.Parameters.AddWithValue("net", netSalary);
+
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("\n===== PAYSLIP GENERATED =====");
+            Console.WriteLine("Gross Salary: $" + salary);
+            Console.WriteLine("Tax Deducted: $" + tax);
+            Console.WriteLine("Net Salary: $" + netSalary);
+        }
+        else if (choice == "2")
+        {
+            string sql = @"
+                SELECT UserID, PayDate, GrossSalary,
+                       TaxDeducted, NetSalary
+                FROM Payslips
+                ORDER BY PayDate DESC;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    Console.WriteLine("\nEmployee ID: " + reader.GetInt32(0));
+                    Console.WriteLine("Pay Date: " + reader.GetDateTime(1).ToShortDateString());
+                    Console.WriteLine("Gross Salary: $" + reader.GetDecimal(2));
+                    Console.WriteLine("Tax: $" + reader.GetDecimal(3));
+                    Console.WriteLine("Net Salary: $" + reader.GetDecimal(4));
+                }
+            }
+        }
+        else if (choice == "3")
+        {
+            Console.Write("Enter default tax rate (%): ");
+            decimal rate = decimal.Parse(Console.ReadLine());
+
+            if (rate < 0 || rate > 100)
+            {
+                Console.WriteLine("Invalid tax rate.");
+                return;
+            }
+
+            string sql = @"
+                UPDATE PayrollSettings
+                SET DefaultTaxRate = @rate
+                WHERE SettingID = 1;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("rate", rate);
+
+                if (cmd.ExecuteNonQuery() == 0)
+                {
+                    string insert = @"
+                        INSERT INTO PayrollSettings
+                        (SettingID, DefaultTaxRate)
+                        VALUES (1, @rate);";
+
+                    using (var insertCmd = new NpgsqlCommand(insert, conn))
+                    {
+                        insertCmd.Parameters.AddWithValue("rate", rate);
+                        insertCmd.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            Console.WriteLine("Default tax rate updated.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid option.");
+        }
+    }
+
+    // EMPLOYEE VIEW PAYSLIPS
+    static void ViewMyPayslips(NpgsqlConnection conn, int userID)
+    {
+        string sql = @"
+            SELECT PayDate, GrossSalary, TaxDeducted, NetSalary
+            FROM Payslips
+            WHERE UserID = @userID
+            ORDER BY PayDate DESC;";
+
+        using (var cmd = new NpgsqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("userID", userID);
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                Console.WriteLine("\n===== MY PAYSLIPS =====");
+
+                bool found = false;
+
+                while (reader.Read())
+                {
+                    found = true;
+
+                    Console.WriteLine("\nPay Date: " + reader.GetDateTime(0).ToShortDateString());
+                    Console.WriteLine("Gross Salary: $" + reader.GetDecimal(1));
+                    Console.WriteLine("Tax Deducted: $" + reader.GetDecimal(2));
+                    Console.WriteLine("Net Salary: $" + reader.GetDecimal(3));
+                }
+
+                if (!found)
+                    Console.WriteLine("No payslips found.");
+            }
+        }
+    }
+
+    // EMPLOYEE UPDATE PERSONAL INFORMATION
+    static void UpdateMyInformation(NpgsqlConnection conn, int userID)
+    {
+        Console.WriteLine("\n===== UPDATE MY INFORMATION =====");
+
+        Console.Write("Enter your full name: ");
+        string name = Console.ReadLine();
+
+        Console.Write("Enter your email: ");
+        string email = Console.ReadLine();
+
+        Console.Write("Enter your phone number: ");
+        string phone = Console.ReadLine();
+
+        Console.Write("Enter your address: ");
+        string address = Console.ReadLine();
+
+        string sql = @"
+            UPDATE Employees
+            SET FullName = @name,
+                Email = @email,
+                Phone = @phone,
+                Address = @address
+            WHERE UserID = @userID;";
+
+        using (var cmd = new NpgsqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("name", name);
+            cmd.Parameters.AddWithValue("email", email);
+            cmd.Parameters.AddWithValue("phone", phone);
+            cmd.Parameters.AddWithValue("address", address);
+            cmd.Parameters.AddWithValue("userID", userID);
+
+            Console.WriteLine(cmd.ExecuteNonQuery() > 0
+                ? "Your information has been updated."
+                : "Employee information not found.");
+        }
+    }
+
+    // COMPANY INFORMATION
+    static void CompanyInformation(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== COMPANY INFORMATION =====");
+        Console.WriteLine("1. View Company Information");
+        Console.WriteLine("2. Update Company Information");
+
+        Console.Write("Select an option: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            string sql = @"
+                SELECT CompanyName, Address, Phone, Email
+                FROM CompanyInformation
+                WHERE CompanyID = 1;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    Console.WriteLine("Company: " + reader.GetString(0));
+                    Console.WriteLine("Address: " + reader.GetString(1));
+                    Console.WriteLine("Phone: " + reader.GetString(2));
+                    Console.WriteLine("Email: " + reader.GetString(3));
+                }
+                else
+                {
+                    Console.WriteLine("Company information not found.");
+                }
+            }
+        }
+        else if (choice == "2")
+        {
+            Console.Write("Company name: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Address: ");
+            string address = Console.ReadLine();
+
+            Console.Write("Phone: ");
+            string phone = Console.ReadLine();
+
+            Console.Write("Email: ");
+            string email = Console.ReadLine();
+
+            string sql = @"
+                UPDATE CompanyInformation
+                SET CompanyName = @name,
+                    Address = @address,
+                    Phone = @phone,
+                    Email = @email
+                WHERE CompanyID = 1;";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("name", name);
+                cmd.Parameters.AddWithValue("address", address);
+                cmd.Parameters.AddWithValue("phone", phone);
+                cmd.Parameters.AddWithValue("email", email);
+
+                Console.WriteLine(cmd.ExecuteNonQuery() > 0
+                    ? "Company information updated."
+                    : "Company information not found. Add a company record first.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Invalid option.");
+        }
+    }
+
+    // HOLIDAY MANAGEMENT - ADMIN
+    static void HolidayManagement(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== HOLIDAY MANAGEMENT =====");
+        Console.WriteLine("1. Add Holiday");
+        Console.WriteLine("2. Add Company Event");
+        Console.WriteLine("3. View Holidays and Events");
+
+        Console.Write("Select an option: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            Console.Write("Holiday name: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Holiday date (YYYY-MM-DD): ");
+            DateTime date = DateTime.Parse(Console.ReadLine());
+
+            Console.Write("Description: ");
+            string description = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO Holidays
+                (HolidayName, HolidayDate, Description)
+                VALUES (@name, @date, @description);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("name", name);
+                cmd.Parameters.AddWithValue("date", date);
+                cmd.Parameters.AddWithValue("description", description);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Holiday added.");
+        }
+        else if (choice == "2")
+        {
+            Console.Write("Event name: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Event date (YYYY-MM-DD): ");
+            DateTime date = DateTime.Parse(Console.ReadLine());
+
+            Console.Write("Description: ");
+            string description = Console.ReadLine();
+
+            string sql = @"
+                INSERT INTO CompanyEvents
+                (EventName, EventDate, Description)
+                VALUES (@name, @date, @description);";
+
+            using (var cmd = new NpgsqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("name", name);
+                cmd.Parameters.AddWithValue("date", date);
+                cmd.Parameters.AddWithValue("description", description);
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.WriteLine("Company event added.");
+        }
+        else if (choice == "3")
+        {
+            ViewHolidayLists(conn);
+        }
+        else
+        {
+            Console.WriteLine("Invalid option.");
+        }
+    }
+
+    // VIEW HOLIDAYS AND COMPANY EVENTS
+    static void ViewHolidayLists(NpgsqlConnection conn)
+    {
+        Console.WriteLine("\n===== UPCOMING HOLIDAYS =====");
+
+        string holidaySQL = @"
+            SELECT HolidayName, HolidayDate, Description
+            FROM Holidays
+            WHERE HolidayDate >= CURRENT_DATE
+            ORDER BY HolidayDate;";
+
+        using (var cmd = new NpgsqlCommand(holidaySQL, conn))
+        using (var reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                Console.WriteLine("\nHoliday: " + reader.GetString(0));
+                Console.WriteLine("Date: " + reader.GetDateTime(1).ToShortDateString());
+                Console.WriteLine("Description: " + reader.GetString(2));
+            }
+        }
+
+        Console.WriteLine("\n===== UPCOMING COMPANY EVENTS =====");
+
+        string eventSQL = @"
+            SELECT EventName, EventDate, Description
+            FROM CompanyEvents
+            WHERE EventDate >= CURRENT_DATE
+            ORDER BY EventDate;";
+
+        using (var cmd = new NpgsqlCommand(eventSQL, conn))
+        using (var reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                Console.WriteLine("\nEvent: " + reader.GetString(0));
+                Console.WriteLine("Date: " + reader.GetDateTime(1).ToShortDateString());
+                Console.WriteLine("Description: " + reader.GetString(2));
             }
         }
     }
